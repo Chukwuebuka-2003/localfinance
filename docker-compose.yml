@@ -8,11 +8,38 @@ services:
     volumes:
       - .:/app
     environment:
-      - OLLAMA_HOST=http://host.docker.internal:11434
+      # AI Provider Configuration
+      # Options: "ollama" or "lmstudio"
+      - AI_PROVIDER=${AI_PROVIDER:-ollama}
+
+      # Ollama Configuration (used for both chat and embeddings by default)
+      - OLLAMA_HOST=${OLLAMA_HOST:-http://host.docker.internal:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-granite4:latest}
+      - OLLAMA_EMBEDDING_MODEL=${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text-v2-moe}
+
+      # LM Studio Configuration (OpenAI-compatible)
+      - LMSTUDIO_HOST=${LMSTUDIO_HOST:-http://host.docker.internal:1234}
+      - LMSTUDIO_MODEL=${LMSTUDIO_MODEL:-qwen/qwen3-vl-8b}
+      - LMSTUDIO_EMBEDDING_MODEL=${LMSTUDIO_EMBEDDING_MODEL:-text-embedding-nomic-embed-text-v2-moe}
+      - LMSTUDIO_API_KEY=${LMSTUDIO_API_KEY:-lm-studio}
+
+      # Embedding Provider (can be different from AI_PROVIDER)
+      # Options: "ollama" or "lmstudio"
+      - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-ollama}
+
+      # Vector size (depends on your embedding model)
+      - VECTOR_SIZE=${VECTOR_SIZE:-768}
+
+      # Qdrant Configuration
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
+
+      # Python path for imports
+      - PYTHONPATH=/app
     depends_on:
       - qdrant
+    networks:
+      - financial-network
 
   qdrant:
     image: qdrant/qdrant:latest
@@ -20,6 +47,12 @@ services:
       - "6333:6333"
     volumes:
       - qdrant_data:/qdrant/storage
+    networks:
+      - financial-network
 
 volumes:
   qdrant_data:
+
+networks:
+  financial-network:
+    driver: bridge
