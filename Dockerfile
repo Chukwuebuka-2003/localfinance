@@ -1,21 +1,20 @@
 FROM python:3.11-slim
 
+# Install uv via pip
+RUN pip install --no-cache-dir uv
+
 WORKDIR /app
 
-# Install system dependencies for pdfplumber
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpoppler-cpp-dev \
-    pkg-config \
-    python3-dev \
-    && rm -rf /var/lib/apt/lists/*
+# Copy only dependency files first (for layer caching)
+COPY pyproject.toml uv.lock ./
 
-COPY requirements.txt .
-
-RUN pip install --no-cache-dir -r requirements.txt
+# Install all dependencies into the system python (not a venv)
+# --system flag tells uv to install into the system Python, avoiding venv path issues
+RUN uv pip install --system -r pyproject.toml
 
 COPY . .
 
-EXPOSE 8000
+EXPOSE 1578
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# Use uv run to ensure the uvicorn runs within the managed virtual environment
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "1578"]
